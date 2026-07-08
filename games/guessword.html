@@ -177,7 +177,7 @@
   <div class="game-page" style="display:flex;">
     <div class="game-banner">
       🎯 猜英文单词
-      <a class="back-home-btn" href="main.html">← 首页</a>
+      <a class="back-home-btn" href="../index.html">← 返回大厅</a>
     </div>
 
     <div class="game-layout">
@@ -261,6 +261,7 @@
         updateDisplay();
         if (reveal.every(function(ch) { return ch !== null; })) {
           history.innerHTML += '<div style="color:#2ecc71;font-weight:bold;">🎉 胜利！单词是 ' + targetWord + '</div>';
+          saveScoreIfNeeded();
         }
       });
 
@@ -274,6 +275,13 @@
 
       function reset() { randomBtn.click(); history.innerHTML = ''; }
 
+      function saveScoreIfNeeded() {
+        const score = targetWord.length * 10 + reveal.filter(Boolean).length;
+        if (window.gameApi && window.gameApi.saveCurrentGameScore) {
+          window.gameApi.saveCurrentGameScore('guessword', score);
+        }
+      }
+
       document.getElementById('startBtn').addEventListener('click', reset);
       document.getElementById('restartBtn').addEventListener('click', reset);
 
@@ -281,5 +289,7 @@
       randomBtn.click();
     })();
   </script>
+
+  <script src="../js/game-api.js"></script>
 </body>
 </html>

@@ -1,40 +1,36 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>排行榜 - GamePlatform</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>排行榜 · 赛博游戏厅</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/games.css">
+  <style>
+    body { background-image: url('assets/images/bg.png'); background-size: cover; background-position: center; }
+  </style>
 </head>
 <body>
-  <div id="particle-bg" aria-hidden="true"></div>
-  <main class="container neon-card">
-    <h2>本地排行榜（基于 localStorage）</h2>
-    <div id="leaderboards"></div>
-    <a href="index.html" class="btn">返回大厅</a>
-  </main>
-
-  <script src="js/auth.js"></script>
+  <canvas id="particles"></canvas>
+  <div class="page-shell">
+    <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <a class="btn" href="index.html">← 返回大厅</a>
+      <h2 style="margin:0;">排行榜</h2>
+    </div>
+    <section class="sheet glass">
+      <div class="rank-list" id="rankList"></div>
+    </section>
+  </div>
+  <script src="js/platform.js"></script>
+  <script src="js/ui.js"></script>
   <script>
-    (function(){
-      const users = Auth.getAllUsers();
-      // 构建每个游戏的排行榜
-      const scoresByGame = {};
-      for (const u of users) {
-        const games = u.games || {};
-        for (const [g, d] of Object.entries(games)) {
-          scoresByGame[g] = scoresByGame[g] || [];
-          scoresByGame[g].push({nick:u.nickname||u.email, best:d.best||0, plays:d.plays||0});
-        }
-      }
-      const container = document.getElementById('leaderboards');
-      const html = Object.entries(scoresByGame).map(([g, arr])=>{
-        arr.sort((a,b)=>b.best-a.best);
-        const rows = arr.slice(0,10).map((r,i)=>`<tr><td>${i+1}</td><td>${r.nick}</td><td>${r.best}</td><td>${r.plays}</td></tr>`).join('');
-        return `<h3>${g}</h3><table class="leaderboard"><thead><tr><th>#</th><th>玩家</th><th>最高分</th><th>次数</th></tr></thead><tbody>${rows}</tbody></table>`;
+    document.addEventListener('DOMContentLoaded', function () {
+      const list = document.getElementById('rankList');
+      const rankings = window.gamePlatform.getRankings();
+      list.innerHTML = rankings.map(function (item, index) {
+        return '<div class="rank-item"><div><strong>#' + (index + 1) + ' ' + item.nickname + '</strong><div class="muted">' + (item.guest ? '游客身份' : '注册用户') + '</div></div><div><strong>' + item.bestScore + '</strong></div></div>';
       }).join('');
-      container.innerHTML = html || '<p>暂无成绩数据</p>';
-    })();
+    });
   </script>
 </body>
 </html>

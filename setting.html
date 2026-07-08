@@ -1,59 +1,77 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>设置 - GamePlatform</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设置 · 赛博游戏厅</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/games.css">
+  <style>
+    body { background-image: url('assets/images/bg.png'); background-size: cover; background-position: center; }
+  </style>
 </head>
 <body>
-  <div id="particle-bg" aria-hidden="true"></div>
-
-  <main class="container neon-card">
-    <h2>设置</h2>
-    <section>
-      <h3>外观</h3>
-      <button id="theme-light" class="btn">浅色模式</button>
-      <button id="theme-dark" class="btn">深色模式</button>
-      <button id="skin-1" class="btn">皮肤 1</button>
-      <button id="skin-2" class="btn">皮肤 2</button>
+  <canvas id="particles"></canvas>
+  <div class="page-shell">
+    <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <a class="btn" href="index.html">← 返回大厅</a>
+      <h2 style="margin:0;">设置</h2>
+    </div>
+    <section class="sheet glass">
+      <div class="form-group">
+        <label>主题皮肤</label>
+        <div class="row">
+          <button class="btn" data-theme="neon">霓虹</button>
+          <button class="btn" data-theme="aurora">极光</button>
+          <button class="btn" data-theme="sunset">落日</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>模式</label>
+        <div class="row">
+          <button class="btn" data-mode="dark">深色</button>
+          <button class="btn" data-mode="light">浅色</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>音量</label>
+        <input id="volumeRange" type="range" min="0" max="1" step="0.01" value="0.65">
+      </div>
+      <div class="form-group">
+        <button class="btn btn-primary" id="muteBtn">🔊 音量</button>
+      </div>
     </section>
-
-    <section>
-      <h3>声音</h3>
-      <label>背景音量：<input id="settings-volume" type="range" min="0" max="1" step="0.01"></label>
-      <button id="settings-mute" class="btn">静音/取消</button>
-    </section>
-
-    <section>
-      <h3>账户</h3>
-      <button id="goto-account" class="btn">个人中心</button>
-      <button id="logout" class="btn danger">退出登录</button>
-    </section>
-
-    <a href="index.html" class="btn">返回大厅</a>
-  </main>
-
-  <script src="js/auth.js"></script>
+  </div>
+  <script src="js/platform.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/audio.js"></script>
   <script>
-    (function(){
-      const user = Auth.getCurrentUser();
-      if(!user) location.href='login.html';
-      AudioManager.init();
-      document.getElementById('theme-light').addEventListener('click', ()=>{ Auth.setSetting('theme','light'); alert('已切换浅色'); });
-      document.getElementById('theme-dark').addEventListener('click', ()=>{ Auth.setSetting('theme','dark'); alert('已切换深色'); });
-      document.getElementById('skin-1').addEventListener('click', ()=>{ Auth.setSetting('skin','neon'); alert('已切换皮肤 1'); });
-      document.getElementById('skin-2').addEventListener('click', ()=>{ Auth.setSetting('skin','mono'); alert('已切换皮肤 2'); });
-
-      document.getElementById('settings-volume').value = AudioManager.getVolume();
-      document.getElementById('settings-volume').addEventListener('input', (e)=>{ AudioManager.setVolume(parseFloat(e.target.value)); });
-
-      document.getElementById('settings-mute').addEventListener('click', ()=>{ AudioManager.toggleMute(); });
-
-      document.getElementById('goto-account').addEventListener('click', ()=> location.href='user.html');
-      document.getElementById('logout').addEventListener('click', ()=>{ Auth.logout(); location.href='login.html'; });
-    })();
+    document.addEventListener('DOMContentLoaded', function () {
+      const settings = window.gamePlatform.getSettings();
+      document.querySelectorAll('[data-theme]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          settings.theme = this.getAttribute('data-theme');
+          window.gamePlatform.saveSettings(settings);
+          window.uiHelper.applyTheme(settings);
+        });
+      });
+      document.querySelectorAll('[data-mode]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          settings.mode = this.getAttribute('data-mode');
+          window.gamePlatform.saveSettings(settings);
+          window.uiHelper.applyTheme(settings);
+        });
+      });
+      const volumeRange = document.getElementById('volumeRange');
+      volumeRange.value = settings.volume || 0.65;
+      volumeRange.addEventListener('input', function () {
+        window.audioHelper.setVolume(this.value);
+      });
+      document.getElementById('muteBtn').addEventListener('click', function () {
+        const muted = window.audioHelper.toggleMute();
+        this.textContent = muted ? '🔈 静音' : '🔊 音量';
+      });
+    });
   </script>
 </body>
 </html>

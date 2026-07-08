@@ -1,52 +1,95 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>注册 - GamePlatform</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>注册 · 赛博游戏厅</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/games.css">
+  <style>
+    body { background-image: url('assets/images/bg.png'); background-size: cover; background-position: center; }
+    .auth-card { background: var(--panel-strong); }
+  </style>
 </head>
 <body>
-  <div id="particle-bg" aria-hidden="true"></div>
-
-  <main class="auth-container neon-card">
-    <h2>注册新账号</h2>
-    <form id="reg-form">
-      <label>昵称：<input id="reg-nick" required></label>
-      <label>邮箱：<input id="reg-email" type="email" required></label>
-      <label>密码：<input id="reg-password" type="password" required></label>
-      <label>确认密码：<input id="reg-password2" type="password" required></label>
-      <div class="form-actions">
-        <button type="submit" class="btn primary">注册</button>
-        <a href="login.html" class="btn">已有账号</a>
+  <canvas id="particles"></canvas>
+  <div class="auth-shell">
+    <div class="auth-card glass">
+      <h1>创建你的赛博账号</h1>
+      <p class="subtext">注册后即可同步最高分、签到与主题偏好。</p>
+      <div class="form-group">
+        <label for="nickname">昵称</label>
+        <input id="nickname" class="input" placeholder="请输入昵称" autocomplete="nickname">
       </div>
-    </form>
-  </main>
-
-  <script src="js/particles.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/auth.js"></script>
+      <div class="form-group">
+        <label for="email">邮箱</label>
+        <input id="email" class="input" type="email" placeholder="请输入邮箱" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="password">密码</label>
+        <input id="password" class="input" type="password" placeholder="请输入密码" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label for="confirmPassword">确认密码</label>
+        <input id="confirmPassword" class="input" type="password" placeholder="再次输入密码" autocomplete="new-password">
+      </div>
+      <div class="status-line" id="statusLine"></div>
+      <div class="form-actions row">
+        <button class="btn btn-primary" id="registerBtn">注册</button>
+        <a class="btn" href="login.html">返回登录</a>
+      </div>
+      <p class="form-note">已有账号？<a href="login.html">立即登录</a></p>
+    </div>
+  </div>
+  <script src="js/platform.js"></script>
+  <script src="js/ui.js"></script>
   <script>
-    AudioManager.init();
-    document.getElementById('reg-form').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const nick = document.getElementById('reg-nick').value.trim();
-      const email = document.getElementById('reg-email').value.trim();
-      const p1 = document.getElementById('reg-password').value;
-      const p2 = document.getElementById('reg-password2').value;
-      if (p1 !== p2) {
-        AudioManager.play('login-fail');
-        alert('两次输入的密码不一致');
-        return;
+    document.addEventListener('DOMContentLoaded', function () {
+      const statusLine = document.getElementById('statusLine');
+      const registerBtn = document.getElementById('registerBtn');
+      const fields = ['nickname', 'email', 'password', 'confirmPassword'];
+      function validate() {
+        const nickname = document.getElementById('nickname').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        if (!nickname || !email || !password || !confirmPassword) {
+          statusLine.textContent = '请完整填写所有项。';
+          statusLine.className = 'status-line';
+          return false;
+        }
+        if (password.length < 6) {
+          statusLine.textContent = '密码至少需要 6 位。';
+          statusLine.className = 'status-line';
+          return false;
+        }
+        if (password !== confirmPassword) {
+          statusLine.textContent = '两次输入密码不一致。';
+          statusLine.className = 'status-line';
+          return false;
+        }
+        statusLine.textContent = '信息格式正确。';
+        statusLine.className = 'status-line success';
+        return true;
       }
-      const res = await Auth.register({nickname:nick, email, password:p1});
-      if (res.success) {
-        AudioManager.play('login-success');
-        location.href = 'index.html';
-      } else {
-        AudioManager.play('login-fail');
-        alert(res.message || '注册失败');
-      }
+      fields.forEach(function (id) {
+        document.getElementById(id).addEventListener('input', validate);
+      });
+      registerBtn.addEventListener('click', function () {
+        if (!validate()) return;
+        const result = window.gamePlatform.registerUser({
+          nickname: document.getElementById('nickname').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          password: document.getElementById('password').value,
+          confirmPassword: document.getElementById('confirmPassword').value
+        });
+        statusLine.textContent = result.message;
+        statusLine.className = 'status-line' + (result.ok ? ' success' : '');
+        if (result.ok) {
+          window.uiHelper.showToast('注册成功，正在前往登录', 'success');
+          setTimeout(function () { window.location.href = 'login.html'; }, 700);
+        }
+      });
     });
   </script>
 </body>
