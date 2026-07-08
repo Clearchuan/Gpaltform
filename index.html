@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>游戏大厅 - GamePlatform</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 大厅页面：仅登录后访问 -->
+  <div id="particle-bg" aria-hidden="true"></div>
+
+  <header class="topbar neon">
+    <div class="brand">GamePlatform</div>
+    <div class="top-actions">
+      <button id="theme-toggle" class="btn">主题</button>
+      <button id="skin-select" class="btn">切换皮肤</button>
+      <button id="checkin-btn" class="btn">每日签到</button>
+      <div class="user-info" id="user-info"></div>
+      <button id="logout-btn" class="btn danger">退出</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="welcome neon-card">
+      <h1 id="welcome-msg">欢迎</h1>
+      <p class="muted">选择一个游戏开始游玩。你的进度与最高分保存在本地（localStorage）。</p>
+    </section>
+
+    <section class="controls neon-card">
+      <div class="audio-controls">
+        <button id="mute-toggle" class="btn">静音</button>
+        音量：<input id="volume-slider" type="range" min="0" max="1" step="0.01">
+      </div>
+      <div class="search">
+        <input id="game-search" placeholder="搜索游戏名..." />
+      </div>
+    </section>
+
+    <section id="games-grid" class="grid" aria-live="polite"></section>
+  </main>
+
+  <footer class="footer neon">
+    <div>© GamePlatform - 纯本地静态部署 · 深色 / 浅色 · 多套皮肤</div>
+  </footer>
+
+  <script src="js/particles.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/games-api.js"></script>
+  <script src="js/lobby.js"></script>
+
+  <script>
+    // 页面初始化：检查登录态、渲染用户信息、启动粒子与音频
+    (function(){
+      // 若未登录则跳转到登录页（但允许游客模式在 login.html 处理）
+      const user = Auth.getCurrentUser();
+      if (!user) {
+        location.href = 'login.html';
+        return;
+      }
+      Lobby.init();
+      Particles.init('particle-bg', 'assets/images/bg.png');
+      AudioManager.init();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧱 打砖块</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  background: #2d3a3a;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 封面页 - 游戏卡片 */
+.cover-screen {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: #2d3a3a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  transition: opacity 0.5s ease;
+}
+.cover-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.game-card {
+  width: 320px;
+  background: #1a1a2e;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid #4ade80;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.game-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 30px rgba(74, 222, 128, 0.2);
+}
+
+.card-cover {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 50%, #16213e 100%);
+}
+
+.brick-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.brick {
+  width: 36px;
+  height: 14px;
+  border-radius: 2px;
+}
+.paddle {
+  width: 70px;
+  height: 12px;
+  background: #e94560;
+  border-radius: 6px;
+  margin-top: 25px;
+}
+.ball {
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  animation: ballBounce 2s ease-in-out infinite;
+}
+@keyframes ballBounce {
+  0%, 100% { top: 55%; left: 45%; }
+  25% { top: 40%; left: 55%; }
+  50% { top: 30%; left: 50%; }
+  75% { top: 45%; left: 40%; }
+}
+
+.card-title {
+  color: #4ade80;
+  font-size: 1.4em;
+  font-weight: bold;
+  padding: 18px;
+  text-align: center;
+  background: #1a1a2e;
+  border-top: 1px solid #0f3460;
+}
+
+.start-hint {
+  color: #888;
+  font-size: 0.9em;
+  margin-top: 20px;
+  text-align: center;
+}
+
+/* 游戏界面 */
+.game-wrapper {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.game-wrapper.active {
+  display: flex;
+}
+.game-container {
+  background: #16213e;
+  border-radius: 16px;
+  padding: 25px;
+  border: 2px solid #4ade80;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  text-align: center;
+}
+.game-container h2 {
+  color: #e94560;
+  font-size: 1.8em;
+  margin-bottom: 15px;
+}
+canvas {
+  display: block;
+  margin: 0 auto 15px;
+  border-radius: 8px;
+  background: #0f3460;
+}
+.game-info {
+  color: #a0a0a0;
+  font-size: 1.1em;
+  margin-bottom: 10px;
+}
+.controls {
+  color: #888;
+  font-size: 0.9em;
+  margin-bottom: 15px;
+}
+.btn {
+  padding: 10px 30px;
+  background: #e94560;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background 0.3s;
+  margin: 0 5px;
+}
+.btn:hover { background: #c73e54; }
+</style>
+</head>
+<body>
+
+<!-- 封面页 - 游戏卡片 -->
+<div class="cover-screen" id="coverPage">
+  <div class="game-card" onclick="startGame()">
+    <div class="card-cover">
+      <div class="brick-row">
+        <div class="brick" style="background:#e94560"></div>
+        <div class="brick" style="background:#ff6b6b"></div>
+        <div class="brick" style="background:#e94560"></div>
+        <div class="brick" style="background:#ff6b6b"></div>
+        <div class="brick" style="background:#e94560"></div>
+      </div>
+      <div class="brick-row">
+        <div class="brick" style="background:#4ecca3"></div>
+        <div class="brick" style="background:#45b7d1"></div>
+        <div class="brick" style="background:#4ecca3"></div>
+        <div class="brick" style="background:#45b7d1"></div>
+        <div class="brick" style="background:#4ecca3"></div>
+      </div>
+      <div class="brick-row">
+        <div class="brick" style="background:#ffd700"></div>
+        <div class="brick" style="background:#ff6b6b"></div>
+        <div class="brick" style="background:#ffd700"></div>
+        <div class="brick" style="background:#ff6b6b"></div>
+        <div class="brick" style="background:#ffd700"></div>
+      </div>
+      <div class="paddle"></div>
+      <div class="ball"></div>
+    </div>
+    <div class="card-title">🧱 打砖块</div>
+  </div>
+  <div class="start-hint">点击卡片开始游戏</div>
+</div>
+
+<!-- 游戏界面 -->
+<div class="game-wrapper" id="gameWrapper">
+  <div class="game-container">
+    <h2>🧱 打砖块</h2>
+    <canvas id="breakoutCanvas" width="400" height="400"></canvas>
+    <div class="game-info">得分: <span id="breakoutScore">0</span> | 生命: <span id="breakoutLives">3</span></div>
+    <div class="controls">鼠标 / 左右方向键 控制挡板，点击画布开始</div>
+    <button class="btn" onclick="resetBreakout()">重新开始</button>
+  </div>
+</div>
+
+<script>
+function startGame() {
+  document.getElementById('coverPage').classList.add('hidden');
+  setTimeout(() => {
+    document.getElementById('coverPage').style.display = 'none';
+    document.getElementById('gameWrapper').classList.add('active');
+    resetBreakout();
+  }, 500);
+}
+
+const canvas = document.getElementById('breakoutCanvas');
+const ctx = canvas.getContext('2d');
+let paddleX = 160, paddleWidth = 90, paddleHeight = 12;
+let ballX = 200, ballY = 350, ballDX = 3.5, ballDY = -3.5, ballRadius = 8;
+let bricks = [];
+let score = 0, lives = 3;
+let gameOver = false;
+let loop;
+let started = false;
+
+function initBricks() {
+  bricks = [];
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 10; c++) {
+      bricks.push({
+        x: 12 + c * 38, y: 45 + r * 24, w: 33, h: 18,
+        active: true,
+        color: ['#e94560','#ff6b6b','#4ecca3','#45b7d1','#ffd700'][r]
+      });
+    }
+  }
+}
+
+function draw() {
+  ctx.fillStyle = '#0f3460';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  bricks.forEach(b => {
+    if (b.active) {
+      ctx.fillStyle = b.color;
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.strokeStyle = '#16213e';
+      ctx.strokeRect(b.x, b.y, b.w, b.h);
+    }
+  });
+
+  ctx.fillStyle = '#e94560';
+  ctx.fillRect(paddleX, canvas.height - 22, paddleWidth, paddleHeight);
+
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (!started) {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#fff';
+    ctx.font = '22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('点击画布开始游戏', canvas.width/2, canvas.height/2);
+  }
+
+  if (gameOver) {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#e94560';
+    ctx.font = 'bold 32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(lives <= 0 ? '游戏结束!' : '你赢了!', canvas.width/2, canvas.height/2 - 15);
+    ctx.font = '18px sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('得分: ' + score, canvas.width/2, canvas.height/2 + 20);
+  }
+}
+
+function update() {
+  if (!started || gameOver) return;
+
+  ballX += ballDX;
+  ballY += ballDY;
+
+  if (ballX + ballRadius > canvas.width || ballX - ballRadius < 0) ballDX = -ballDX;
+  if (ballY - ballRadius < 0) ballDY = -ballDY;
+
+  if (ballY + ballRadius > canvas.height - 22 && 
+      ballX > paddleX && ballX < paddleX + paddleWidth) {
+    ballDY = -ballDY;
+    ballY = canvas.height - 22 - ballRadius;
+  }
+
+  if (ballY + ballRadius > canvas.height) {
+    lives--;
+    document.getElementById('breakoutLives').textContent = lives;
+    if (lives <= 0) {
+      gameOver = true;
+      clearInterval(loop);
+    } else {
+      ballX = 200; ballY = 350;
+      ballDX = 3.5; ballDY = -3.5;
+      paddleX = 160;
+    }
+  }
+
+  bricks.forEach(b => {
+    if (b.active && ballX > b.x && ballX < b.x + b.w && ballY > b.y && ballY < b.y + b.h) {
+      b.active = false;
+      ballDY = -ballDY;
+      score += 10;
+      document.getElementById('breakoutScore').textContent = score;
+    }
+  });
+
+  if (bricks.every(b => !b.active)) {
+    gameOver = true;
+    clearInterval(loop);
+  }
+
+  draw();
+}
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  paddleX = e.clientX - rect.left - paddleWidth / 2;
+  paddleX = Math.max(0, Math.min(canvas.width - paddleWidth, paddleX));
+});
+
+canvas.addEventListener('click', () => { if (!started) started = true; });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  paddleX = e.touches[0].clientX - rect.left - paddleWidth / 2;
+  paddleX = Math.max(0, Math.min(canvas.width - paddleWidth, paddleX));
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') paddleX = Math.max(0, paddleX - 20);
+  if (e.key === 'ArrowRight') paddleX = Math.min(canvas.width - paddleWidth, paddleX + 20);
+});
+
+function resetBreakout() {
+  initBricks();
+  paddleX = 160; ballX = 200; ballY = 350;
+  ballDX = 3.5; ballDY = -3.5;
+  score = 0; lives = 3;
+  gameOver = false; started = false;
+  document.getElementById('breakoutScore').textContent = 0;
+  document.getElementById('breakoutLives').textContent = 3;
+  clearInterval(loop);
+  loop = setInterval(update, 16);
+  draw();
+}
+</script>
+</body>
+</html>

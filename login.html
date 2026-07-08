@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>登录 - GamePlatform</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="particle-bg" aria-hidden="true"></div>
+
+  <main class="auth-container neon-card">
+    <h2>登录 GamePlatform</h2>
+    <form id="login-form">
+      <label>邮箱或昵称：<input id="login-identifier" required></label>
+      <label>密码：<input id="login-password" type="password"></label>
+      <label><input id="remember-me" type="checkbox"> 记住登录</label>
+      <div class="form-actions">
+        <button type="submit" class="btn primary">登录</button>
+        <button id="guest-btn" type="button" class="btn">游客进入</button>
+      </div>
+    </form>
+    <p>没有账号？<a href="register.html">注册</a></p>
+  </main>
+
+  <script src="js/particles.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // 登录逻辑
+    AudioManager.init();
+    document.getElementById('login-form').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const id = document.getElementById('login-identifier').value.trim();
+      const pwd = document.getElementById('login-password').value;
+      const remember = document.getElementById('remember-me').checked;
+      const res = await Auth.login(id, pwd, remember);
+      if (res.success) {
+        AudioManager.play('login-success');
+        location.href = 'index.html';
+      } else {
+        AudioManager.play('login-fail');
+        alert(res.message || '登录失败');
+      }
+    });
+
+    document.getElementById('guest-btn').addEventListener('click', ()=>{
+      Auth.loginGuest();
+      AudioManager.play('click');
+      location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>

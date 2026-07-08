@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>注册 - GamePlatform</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="particle-bg" aria-hidden="true"></div>
+
+  <main class="auth-container neon-card">
+    <h2>注册新账号</h2>
+    <form id="reg-form">
+      <label>昵称：<input id="reg-nick" required></label>
+      <label>邮箱：<input id="reg-email" type="email" required></label>
+      <label>密码：<input id="reg-password" type="password" required></label>
+      <label>确认密码：<input id="reg-password2" type="password" required></label>
+      <div class="form-actions">
+        <button type="submit" class="btn primary">注册</button>
+        <a href="login.html" class="btn">已有账号</a>
+      </div>
+    </form>
+  </main>
+
+  <script src="js/particles.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    AudioManager.init();
+    document.getElementById('reg-form').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const nick = document.getElementById('reg-nick').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const p1 = document.getElementById('reg-password').value;
+      const p2 = document.getElementById('reg-password2').value;
+      if (p1 !== p2) {
+        AudioManager.play('login-fail');
+        alert('两次输入的密码不一致');
+        return;
+      }
+      const res = await Auth.register({nickname:nick, email, password:p1});
+      if (res.success) {
+        AudioManager.play('login-success');
+        location.href = 'index.html';
+      } else {
+        AudioManager.play('login-fail');
+        alert(res.message || '注册失败');
+      }
+    });
+  </script>
+</body>
+</html>

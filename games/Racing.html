@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D RACING</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #1a252f;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            overflow: hidden;
+            user-select: none;
+        }
+        #gameWrapper {
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        canvas {
+            background-color: #7f8c8d;
+            display: block;
+        }
+        #scoreBoard {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #f1c40f;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+        #tireBoard {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 120px;
+            height: 20px;
+            border: 2px solid #ecf0f1;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        #tireBar {
+            width: 100%;
+            height: 100%;
+            background-color: #2ecc71;
+            transition: background-color 0.3s;
+        }
+        #tireLabel {
+            position: absolute;
+            top: -20px;
+            right: 0;
+            font-size: 14px;
+            color: #ecf0f1;
+            font-weight: bold;
+        }
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(26, 37, 47, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+        .overlay h1 {
+            font-size: 48px;
+            margin: 0 0 5px 0;
+            color: #3498db;
+            text-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+            letter-spacing: 2px;
+        }
+        .overlay p.controls {
+            font-size: 16px;
+            color: #bdc3c7;
+            margin-bottom: 20px;
+        }
+        .diff-btn {
+            width: 200px;
+            margin: 8px 0;
+            padding: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .diff-btn:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+        
+        .btn-easy { background-color: #3498db; } 
+        .btn-normal { background-color: #27ae60; } 
+        .btn-hard { background-color: #f39c12; } 
+        .btn-expert { background-color: #c0392b; } 
+        
+        .action-btn {
+            background-color: #7f8c8d;
+            width: auto;
+            min-width: 150px;
+            margin: 10px 5px;
+        }
+        .action-btn:hover {
+            background-color: #95a5a6;
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+        }
+        
+        #gameOverScreen { display: none; }
+        #gameOverReason {
+            color: #e74c3c;
+            text-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+        .score-display {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #ecf0f1;
+        }
+        .score-display span {
+            color: #f1c40f;
+            font-weight: bold;
+            font-size: 32px;
+        }
+
+        #tireSelectionScreen {
+            display: none;
+            background-color: rgba(26, 37, 47, 0.85);
+            z-index: 25; 
+        }
+        .tire-btn {
+            width: 250px;
+            margin: 10px 0;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            border: 2px solid #2c3e50;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .tire-btn:hover { transform: scale(1.05); }
+        .tire-white { background-color: #ecf0f1; color: #2c3e50; }
+        .tire-yellow { background-color: #f1c40f; color: #2c3e50; }
+        .tire-red { background-color: #e74c3c; color: white; }
+        .tire-desc { font-size: 14px; font-weight: normal; }
+        #selectionTimer {
+            font-size: 40px;
+            color: #f1c40f;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="gameWrapper">
+    <div id="scoreBoard">SCORE: <span id="score">0</span></div>
+    
+    <div id="tireBoard">
+        <div id="tireLabel">WHITE TIRE</div>
+        <div id="tireBar"></div>
+    </div>
+    
+    <canvas id="gameCanvas" width="600" height="600"></canvas>
+    
+    <div id="startScreen" class="overlay">
+        <h1>2D RACING</h1>
+        <p class="controls">按 <b>左 / 右</b> 或 <b>A / D</b> 键切换车道</p>
+        
+        <button class="diff-btn btn-easy" onclick="startGame('easy')">EASY</button>
+        <button class="diff-btn btn-normal" onclick="startGame('normal')">NORMAL</button>
+        <button class="diff-btn btn-hard" onclick="startGame('hard')">HARD</button>
+        <button class="diff-btn btn-expert" onclick="startGame('expert')">EXPERT</button>
+    </div>
+
+    <div id="tireSelectionScreen" class="overlay">
+        <h2>SELECT TIRE</h2>
+        <div id="selectionTimer">5</div>
+        
+        <button class="tire-btn tire-red" onclick="confirmTireSelection('red')">
+            <span>红胎 (RED)</span><span class="tire-desc">最慢流速 / 极快磨损</span>
+        </button>
+        <button class="tire-btn tire-yellow" onclick="confirmTireSelection('yellow')">
+            <span>黄胎 (YELLOW)</span><span class="tire-desc">中等流速 / 较快磨损</span>
+        </button>
+        <button class="tire-btn tire-white" onclick="confirmTireSelection('white')">
+            <span>白胎 (WHITE)</span><span class="tire-desc">标准流速 / 标准磨损</span>
+        </button>
+    </div>
+
+    <div id="gameOverScreen" class="overlay">
+        <h1 id="gameOverReason">CRASHED!</h1>
+        <div class="score-display">最终得分: <span id="finalScore">0</span></div>
+        <div class="button-group">
+            <button class="diff-btn action-btn" onclick="resetGame()">再来一局</button>
+            <button class="diff-btn action-btn" onclick="returnToMenu()">返回菜单</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreElement = document.getElementById('score');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const tireSelectionScreen = document.getElementById('tireSelectionScreen');
+    const finalScoreElement = document.getElementById('finalScore');
+    const tireBarElement = document.getElementById('tireBar');
+    const tireLabelElement = document.getElementById('tireLabel');
+    const timerTextElement = document.getElementById('selectionTimer');
+
+    let score = 0;
+    let gameLoop;
+    let isPlaying = false;
+    
+    let speedMultiplier = 1;
+    let baseSpeed = 3; 
+    let currentScrollSpeed = 0; 
+
+    let currentDifficulty = 'normal';
+    let maxObstacles = 1;
+    let spawnChance = 0.015;
+    let homingChance = 0.2; 
+    let safeDistance = 350; 
+
+    const roadOffsetX = 120; 
+    const laneWidth = 120;
+    
+    const player = {
+        lane: 1, 
+        x: roadOffsetX + 1 * laneWidth + laneWidth / 2, 
+        y: canvas.height - 110,
+        width: 50,
+        height: 90,
+        color: '#3498db',
+        angle: 0
+    };
+
+    let obstacles = [];
+    let lines = [0, 150, 300, 450, 600];
+    let keyProcessed = false;
+
+    const tireColors = {
+        'red': '#e74c3c',
+        'yellow': '#f1c40f',
+        'white': '#ecf0f1',
+        'default': '#2c3e50'
+    };
+
+    const tireMods = {
+        'white': { speed: 1.0, wear: 1.0 }, 
+        'yellow': { speed: 0.85, wear: 1.5 },
+        'red': { speed: 0.7, wear: 2.0 }
+    };
+
+    let currentTire = 'white';
+    let tireHealth = 100;
+    let tireDecayRate = 0.016; 
+    let isBlowout = false;
+    let tapCount = 0;
+    let targetTapDirection = null;
+    let blowoutPitCooldown = 0;
+    
+    let activePitSide = null; 
+    let pitTimer = 0; 
+    let hasTriggeredPit = false; 
+    
+    let pitState = 0; 
+    let pitProgress = 0; 
+    let tireSelectionEndTime = 0; // 记录绝对时间的结束点
+
+    function tryMoveLeft() {
+        if (player.lane > 0) {
+            player.lane--; return true;
+        } else if (player.lane === 0 && activePitSide === 'left') {
+            player.lane = -1; initiatePitStop(); return true;
+        }
+        return false;
+    }
+
+    function tryMoveRight() {
+        if (player.lane < 2) {
+            player.lane++; return true;
+        } else if (player.lane === 2 && activePitSide === 'right') {
+            player.lane = 3; initiatePitStop(); return true;
+        }
+        return false;
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (!isPlaying || keyProcessed || pitState > 0) return;
+        
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+            if (isBlowout) {
+                if (targetTapDirection !== 'left') { tapCount = 1; targetTapDirection = 'left'; }
+                else { tapCount++; }
+                if (tapCount >= 3) { tryMoveLeft(); tapCount = 0; }
+            } else {
+                tryMoveLeft();
+            }
+            keyProcessed = true;
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+            if (isBlowout) {
+                if (targetTapDirection !== 'right') { tapCount = 1; targetTapDirection = 'right'; }
+                else { tapCount++; }
+                if (tapCount >= 3) { tryMoveRight(); tapCount = 0; }
+            } else {
+                tryMoveRight();
+            }
+            keyProcessed = true;
+        }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' || 
+            e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+            keyProcessed = false;
+        }
+    });
+
+    function initiatePitStop() {
+        pitState = 1; 
+        activePitSide = null; 
+    }
+
+    function confirmTireSelection(type) {
+        currentTire = type;
+        tireSelectionScreen.style.display = 'none';
+        pitState = 3; 
+        pitProgress = 0;
+    }
+
+    function drawMechanics(carX, carY, progress) {
+        const hw = player.width / 2;
+        const hh = player.height / 2;
+        const positions = [
+            { dx: -hw - 10, dy: -hh + 20 }, 
+            { dx: hw + 10, dy: -hh + 20 },  
+            { dx: -hw - 10, dy: hh - 20 },  
+            { dx: hw + 10, dy: hh - 20 }    
+        ];
+
+        positions.forEach(pos => {
+            let offset = 60; 
+            let jiggleX = 0, jiggleY = 0;
+
+            if (progress < 60) {
+                offset = 60 - (progress / 60) * 60;
+            } else if (progress > 300) {
+                offset = ((progress - 300) / 60) * 60;
+            } else {
+                offset = 0;
+                jiggleX = (Math.random() - 0.5) * 4;
+                jiggleY = (Math.random() - 0.5) * 4;
+            }
+
+            const mx = carX + pos.dx + (pos.dx < 0 ? -offset : offset) + jiggleX;
+            const my = carY + pos.dy + jiggleY;
+
+            ctx.fillStyle = tireColors[currentTire];
+            ctx.beginPath();
+            ctx.arc(mx, my + 5, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#f1c40f';
+            ctx.beginPath();
+            ctx.arc(mx, my, 8, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
+
+    function drawCar(x, y, color, angle = 0, tireColorCode = 'default') {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+
+        const w = player.width;
+        const h = player.height;
+        const rx = -w / 2;
+        const ry = -h / 2;
+
+        ctx.fillStyle = tireColors[tireColorCode];
+        ctx.fillRect(rx - 4, ry + 15, 8, 20); 
+        ctx.fillRect(rx + w - 4, ry + 15, 8, 20); 
+        ctx.fillRect(rx - 4, ry + h - 35, 8, 20); 
+        ctx.fillRect(rx + w - 4, ry + h - 35, 8, 20); 
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        if(ctx.roundRect) ctx.roundRect(rx, ry, w, h, 8);
+        else ctx.rect(rx, ry, w, h);
+        ctx.fill();
+
+        ctx.fillStyle = '#ecf0f1';
+        ctx.fillRect(rx + 6, ry + 25, w - 12, 18);
+        ctx.fillStyle = '#bdc3c7';
+        ctx.fillRect(rx + 8, ry + h - 25, w - 16, 12);
+
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillRect(rx + 6, ry + 4, 10, 6);
+        ctx.fillRect(rx + w - 16, ry + 4, 10, 6);
+        
+        ctx.restore();
+    }
+
+    function spawnObstacle() {
+        if (obstacles.length >= maxObstacles || pitState > 0) return; 
+        if (obstacles.length > 0 && obstacles[obstacles.length - 1].y < safeDistance) return; 
+
+        if (Math.random() < spawnChance) {
+            let obsLane;
+            if (Math.random() < homingChance) obsLane = player.lane;
+            else obsLane = Math.floor(Math.random() * 3);
+
+            if (activePitSide === 'left' && obsLane === 0) obsLane = 1;
+            if (activePitSide === 'right' && obsLane === 2) obsLane = 1;
+
+            obstacles.push({
+                lane: obsLane,
+                x: roadOffsetX + obsLane * laneWidth + laneWidth / 2,
+                y: -120, 
+                speed: baseSpeed * speedMultiplier, 
+                color: '#e74c3c'
+            });
+        }
+    }
+
+    function drawAndMoveObstacles() {
+        for (let i = 0; i < obstacles.length; i++) {
+            let obs = obstacles[i];
+            
+            obs.y += currentScrollSpeed * (obs.speed / (baseSpeed * speedMultiplier));
+            drawCar(obs.x, obs.y, obs.color, 0, 'default');
+
+            const hitboxShrink = 8; 
+            const collisionX = Math.abs(player.x - obs.x) < (player.width - hitboxShrink * 2);
+            const collisionY = Math.abs(player.y - obs.y) < (player.height - hitboxShrink * 2);
+
+            if (pitState === 0 && collisionX && collisionY) {
+                gameOver('CRASHED!');
+                return; 
+            }
+
+            if (obs.y > canvas.height + 100) {
+                obstacles.splice(i, 1);
+                score += 10;
+                scoreElement.innerText = score;
+                if (currentDifficulty !== 'easy' && speedMultiplier < 1.6) {
+                    speedMultiplier += 0.005; 
+                }
+                i--;
+            }
+        }
+    }
+
+    function drawAndMoveLines() {
+        ctx.fillStyle = '#556270';
+        ctx.fillRect(roadOffsetX, 0, laneWidth * 3, canvas.height);
+
+        ctx.fillStyle = '#ecf0f1';
+        ctx.fillRect(roadOffsetX, 0, 5, canvas.height);
+        ctx.fillRect(canvas.width - roadOffsetX - 5, 0, 5, canvas.height);
+
+        if (activePitSide === 'left') {
+            ctx.fillStyle = 'rgba(46, 204, 113, 0.4)';
+            ctx.fillRect(0, 0, roadOffsetX, canvas.height);
+            ctx.fillStyle = '#2ecc71';
+            ctx.font = 'bold 20px Arial';
+            ctx.fillText('PIT', roadOffsetX / 2, 80);
+        } else if (activePitSide === 'right') {
+            ctx.fillStyle = 'rgba(46, 204, 113, 0.4)';
+            ctx.fillRect(canvas.width - roadOffsetX, 0, roadOffsetX, canvas.height);
+            ctx.fillStyle = '#2ecc71';
+            ctx.font = 'bold 20px Arial';
+            ctx.fillText('PIT', canvas.width - roadOffsetX / 2, 80);
+        }
+
+        ctx.fillStyle = '#bdc3c7';
+        for(let i=0; i<lines.length; i++) {
+            lines[i] += currentScrollSpeed;
+            if(lines[i] > canvas.height) lines[i] = -150;
+            
+            ctx.fillRect(roadOffsetX + laneWidth - 3, lines[i], 6, 80);
+            ctx.fillRect(roadOffsetX + laneWidth * 2 - 3, lines[i], 6, 80);
+        }
+    }
+
+    function updateTireUI() {
+        tireBarElement.style.width = Math.max(0, tireHealth) + '%';
+        if (isBlowout) {
+            tireBarElement.style.backgroundColor = '#000';
+            tireLabelElement.innerText = 'BLOWN!';
+            tireLabelElement.style.color = '#e74c3c';
+        } else {
+            tireLabelElement.innerText = currentTire.toUpperCase() + ' TIRE';
+            tireLabelElement.style.color = '#ecf0f1';
+            if (tireHealth > 50) tireBarElement.style.backgroundColor = '#2ecc71'; 
+            else if (tireHealth > 25) tireBarElement.style.backgroundColor = '#f1c40f'; 
+            else tireBarElement.style.backgroundColor = '#e74c3c'; 
+        }
+    }
+
+    function update() {
+        if (!isPlaying) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        let tireSpeedMod = tireMods[currentTire].speed;
+        let targetSpeed = baseSpeed * speedMultiplier * tireSpeedMod;
+        
+        let targetX;
+        let targetAngle = 0;
+
+        if (pitState > 0) {
+            if (player.lane === -1) targetX = roadOffsetX / 2;
+            else if (player.lane === 3) targetX = canvas.width - roadOffsetX / 2;
+            else targetX = roadOffsetX + player.lane * laneWidth + laneWidth / 2;
+
+            if (pitState === 1) { 
+                targetSpeed = 0;
+                targetAngle = (targetX - player.x) * 0.015; 
+                if (currentScrollSpeed < 0.5 && Math.abs(player.x - targetX) < 2) {
+                    currentScrollSpeed = 0;
+                    pitState = 2; 
+                    player.angle = 0;
+                    
+                    tireSelectionEndTime = Date.now() + 5000;
+                    tireSelectionScreen.style.display = 'flex';
+                }
+            } else if (pitState === 2) { 
+                targetSpeed = 0;
+                currentScrollSpeed = 0;
+                
+                let timeLeft = tireSelectionEndTime - Date.now();
+                timerTextElement.innerText = Math.max(0, Math.ceil(timeLeft / 1000));
+                
+                if (timeLeft <= 0) {
+                    confirmTireSelection(currentTire); 
+                }
+            } else if (pitState === 3) { 
+                targetSpeed = 0;
+                currentScrollSpeed = 0;
+                pitProgress++;
+
+                if (pitProgress >= 360) {
+                    pitState = 4; 
+                    tireHealth = 100;
+                    isBlowout = false;
+                    tapCount = 0;
+                    hasTriggeredPit = false;
+                    updateTireUI();
+                    player.lane = (player.x < canvas.width/2) ? 0 : 2; 
+                }
+            } else if (pitState === 4) { 
+                targetAngle = (targetX - player.x) * 0.015; 
+                if (Math.abs(player.x - targetX) < 2) {
+                    player.angle = 0;
+                    pitState = 0; 
+                }
+            }
+        } else {
+            targetX = roadOffsetX + player.lane * laneWidth + laneWidth / 2;
+            targetAngle = (targetX - player.x) * 0.015; 
+        }
+
+        player.angle = Math.max(-0.4, Math.min(0.4, targetAngle));
+        currentScrollSpeed += (targetSpeed - currentScrollSpeed) * 0.05;
+        player.x += (targetX - player.x) * 0.15; 
+
+        drawAndMoveLines();
+
+        if (pitState === 0) {
+            if (!isBlowout) {
+                let tireWearMod = tireMods[currentTire].wear;
+                tireHealth -= tireDecayRate * speedMultiplier * tireWearMod;
+                updateTireUI();
+
+                if (tireHealth <= 0) {
+                    isBlowout = true;
+                    tireHealth = 0;
+                    blowoutPitCooldown = 300; 
+                    updateTireUI();
+                }
+
+                if (tireHealth <= 30 && tireHealth > 0 && !hasTriggeredPit && activePitSide === null) {
+                    activePitSide = Math.random() < 0.5 ? 'left' : 'right';
+                    pitTimer = 400; 
+                    hasTriggeredPit = true;
+                }
+            } else {
+                blowoutPitCooldown--;
+                if (blowoutPitCooldown <= 0 && activePitSide === null) {
+                    activePitSide = Math.random() < 0.5 ? 'left' : 'right';
+                    pitTimer = 400; 
+                    blowoutPitCooldown = 600 + Math.random() * 600; 
+                }
+            }
+
+            if (activePitSide !== null) {
+                pitTimer--;
+                if (pitTimer <= 0) activePitSide = null; 
+            }
+        }
+
+        spawnObstacle();
+        drawAndMoveObstacles();
+        
+        if (isPlaying) {
+            drawCar(player.x, player.y, player.color, player.angle, currentTire);
+            
+            if (isBlowout && pitState === 0) {
+                ctx.fillStyle = '#e74c3c';
+                ctx.font = 'bold 18px Arial';
+                ctx.textAlign = 'center';
+                let tapsLeft = 3 - tapCount;
+                if(tapsLeft === 3) ctx.fillText('BLOWOUT! TAP TO MOVE', player.x, player.y - 60);
+                else ctx.fillText('TAP x' + tapsLeft, player.x, player.y - 60);
+            }
+
+            if (pitState === 3) {
+                drawMechanics(player.x, player.y, pitProgress);
+                ctx.fillStyle = '#2ecc71';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('CHANGING TIRE', canvas.width / 2, canvas.height / 2 - 80);
+            }
+            
+            gameLoop = requestAnimationFrame(update);
+        }
+    }
+
+    function startGame(difficulty) {
+        currentDifficulty = difficulty;
+        
+        switch(difficulty) {
+            case 'easy':
+                baseSpeed = 1.8; maxObstacles = 1; spawnChance = 0.015; homingChance = 0.05; safeDistance = 450; tireDecayRate = 0.012;
+                break;
+            case 'normal':
+                baseSpeed = 2.5; maxObstacles = 2; spawnChance = 0.018; homingChance = 0.1; safeDistance = 380; tireDecayRate = 0.016;
+                break;
+            case 'hard':
+                baseSpeed = 3.2; maxObstacles = 2; spawnChance = 0.02; homingChance = 0.2; safeDistance = 350; tireDecayRate = 0.024;
+                break;
+            case 'expert':
+                baseSpeed = 3.8; maxObstacles = 2; spawnChance = 0.025; homingChance = 0.3; safeDistance = 300; tireDecayRate = 0.032;
+                break;
+        }
+
+        startScreen.style.display = 'none';
+        gameOverScreen.style.display = 'none';
+        tireSelectionScreen.style.display = 'none';
+        resetData();
+        isPlaying = true;
+        update();
+    }
+
+    function gameOver(reason) {
+        isPlaying = false;
+        cancelAnimationFrame(gameLoop);
+        document.getElementById('gameOverReason').innerText = reason;
+        finalScoreElement.innerText = score;
+        gameOverScreen.style.display = 'flex'; 
+    }
+
+    function resetGame() {
+        startGame(currentDifficulty);
+    }
+
+    function returnToMenu() {
+        gameOverScreen.style.display = 'none';
+        startScreen.style.display = 'flex';
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#556270';
+        ctx.fillRect(roadOffsetX, 0, laneWidth * 3, canvas.height);
+    }
+
+    function resetData() {
+        score = 0;
+        speedMultiplier = 1;
+        currentScrollSpeed = 0;
+        scoreElement.innerText = score;
+        obstacles = [];
+        player.lane = 1;
+        player.x = roadOffsetX + 1 * laneWidth + laneWidth / 2;
+        player.angle = 0;
+        keyProcessed = false;
+        lines = [0, 150, 300, 450, 600];
+        
+        currentTire = 'white';
+        tireHealth = 100;
+        isBlowout = false;
+        tapCount = 0;
+        targetTapDirection = null;
+        activePitSide = null;
+        hasTriggeredPit = false;
+        pitState = 0;
+        pitProgress = 0;
+        updateTireUI();
+    }
+    
+    ctx.fillStyle = '#7f8c8d';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#556270';
+    ctx.fillRect(roadOffsetX, 0, laneWidth * 3, canvas.height);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英文单词接龙 · 网页小游戏</title>
+  <style>
+    /* ===== 基础重置 ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background: #f5f7fa;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ===== 游戏页面通用 ===== */
+    .game-page {
+      width: 100%;
+      max-width: 1100px;
+      background: white;
+      min-height: 100vh;
+      padding-bottom: 3rem;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .game-banner {
+      width: 100%;
+      background: #3a3f4b;
+      color: white;
+      padding: 1rem 0;
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      position: relative;
+    }
+
+    .back-home-btn {
+      position: absolute;
+      left: 1.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: white;
+      padding: 0.4rem 1.2rem;
+      border-radius: 40px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.2s;
+      backdrop-filter: blur(4px);
+      letter-spacing: 0.5px;
+      text-decoration: none;
+    }
+
+    .back-home-btn:hover {
+      background: rgba(255,255,255,0.3);
+      border-color: rgba(255,255,255,0.6);
+    }
+
+    .game-layout {
+      width: 100%;
+      max-width: 1000px;
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      align-items: flex-start;
+    }
+
+    .rule-box {
+      flex: 1 1 220px;
+      background: #f0f3f8;
+      padding: 1.2rem 1.5rem;
+      border-radius: 24px;
+      box-shadow: inset 0 1px 4px rgba(0,0,0,0.02);
+      font-size: 0.95rem;
+      color: #1e2a3a;
+      line-height: 1.6;
+      border: 1px solid #e2e8f0;
+      min-width: 170px;
+    }
+
+    .rule-box h3 {
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #2c3e4e;
+    }
+
+    .game-controls {
+      flex: 1 1 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      align-items: flex-start;
+    }
+
+    .ctrl-btn {
+      background: #dce3ed;
+      border: none;
+      padding: 0.7rem 1.8rem;
+      border-radius: 40px;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #1f2a3a;
+      cursor: pointer;
+      transition: 0.15s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+      width: 100%;
+      text-align: center;
+    }
+
+    .ctrl-btn:hover {
+      background: #c8d2e0;
+      transform: scale(0.97);
+    }
+
+    .ctrl-btn.primary {
+      background: #3a3f4b;
+      color: white;
+    }
+
+    .ctrl-btn.primary:hover {
+      background: #2c313c;
+    }
+
+    .game-canvas-wrapper {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 0.5rem 0 1rem;
+    }
+
+    .word-chain-area {
+      width: 100%;
+      max-width: 600px;
+      background: #f8faff;
+      border-radius: 28px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      border: 1px solid #e9edf4;
+      min-height: 300px;
+    }
+
+    .game-input {
+      padding: 0.5rem 0.8rem;
+      border-radius: 40px;
+      border: 1px solid #cdd7e4;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .game-input:focus {
+      border-color: #3a3f4b;
+    }
+
+    /* 响应式 */
+    @media (max-width: 640px) {
+      .back-home-btn { left: 0.8rem; padding: 0.2rem 0.8rem; font-size: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-page" style="display:flex;">
+    <div class="game-banner">
+      🎯 英文单词接龙
+      <a class="back-home-btn" href="main.html">← 首页</a>
+    </div>
+
+    <div class="game-layout">
+      <div class="rule-box">
+        <h3>📖 规则</h3>
+        <p>输入一个英文单词，接龙上一个单词的末字母。</p>
+      </div>
+      <div class="game-controls">
+        <button class="ctrl-btn primary" id="startBtn">▶ 开始游戏</button>
+        <button class="ctrl-btn" id="restartBtn">⟳ 重新开始</button>
+      </div>
+    </div>
+
+    <div class="game-canvas-wrapper">
+      <div class="word-chain-area" id="wordChainArea">
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+          <input id="chainInput" class="game-input" placeholder="输入单词" style="flex:2;">
+          <button id="chainSubmitBtn" class="ctrl-btn" style="flex:1;">接龙</button>
+        </div>
+        <div id="chainDisplay" style="font-size:1.2rem; min-height:2.5rem; background:#eef2f7; border-radius:20px; padding:0.6rem; text-align:center;">等待开始...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const display = document.getElementById('chainDisplay');
+      const input = document.getElementById('chainInput');
+      const submit = document.getElementById('chainSubmitBtn');
+      let lastChar = null;
+
+      display.textContent = '输入一个单词开始接龙';
+
+      submit.addEventListener('click', function() {
+        const word = input.value.trim().toLowerCase();
+        if (!word) return;
+        if (lastChar && word[0] !== lastChar) {
+          display.textContent = '❌ 必须以 "' + lastChar + '" 开头，请重新输入';
+          return;
+        }
+        lastChar = word[word.length-1];
+        display.textContent = '✅ ' + word + '  (下一字母: ' + lastChar + ')';
+        input.value = '';
+      });
+
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') submit.click();
+      });
+
+      function reset() {
+        lastChar = null;
+        display.textContent = '输入一个单词开始接龙';
+        input.value = '';
+      }
+
+      document.getElementById('startBtn').addEventListener('click', reset);
+      document.getElementById('restartBtn').addEventListener('click', reset);
+    })();
+  </script>
+</body>
+</html>

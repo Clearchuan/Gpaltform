@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⭕ 井字棋</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  background: #2d3a3a;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 封面页 - 游戏卡片 */
+.cover-screen {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: #2d3a3a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  transition: opacity 0.5s ease;
+}
+.cover-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.game-card {
+  width: 320px;
+  background: #1a1a2e;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid #4ade80;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.game-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 30px rgba(74, 222, 128, 0.2);
+}
+
+.card-cover {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 50%, #16213e 100%);
+}
+
+.grid-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 160px;
+  height: 160px;
+}
+.cell {
+  width: 100%;
+  height: 100%;
+  border: 2px solid #4ecca3;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2em;
+  font-weight: bold;
+}
+.cell.x { color: #e94560; }
+.cell.o { color: #4ecca3; }
+
+.card-title {
+  color: #4ade80;
+  font-size: 1.4em;
+  font-weight: bold;
+  padding: 18px;
+  text-align: center;
+  background: #1a1a2e;
+  border-top: 1px solid #0f3460;
+}
+
+.start-hint {
+  color: #888;
+  font-size: 0.9em;
+  margin-top: 20px;
+  text-align: center;
+}
+
+/* 游戏界面 */
+.game-wrapper {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.game-wrapper.active {
+  display: flex;
+}
+.game-container {
+  background: #16213e;
+  border-radius: 16px;
+  padding: 25px;
+  border: 2px solid #4ade80;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  text-align: center;
+}
+.game-container h2 {
+  color: #e94560;
+  font-size: 1.8em;
+  margin-bottom: 15px;
+}
+canvas {
+  display: block;
+  margin: 0 auto 15px;
+  border-radius: 8px;
+  background: #0f3460;
+  cursor: pointer;
+}
+.game-info {
+  color: #a0a0a0;
+  font-size: 1.1em;
+  margin-bottom: 15px;
+  min-height: 1.5em;
+}
+.controls {
+  color: #888;
+  font-size: 0.9em;
+  margin-bottom: 15px;
+}
+.btn {
+  padding: 10px 30px;
+  background: #e94560;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background 0.3s;
+}
+.btn:hover { background: #c73e54; }
+</style>
+</head>
+<body>
+
+<!-- 封面页 - 游戏卡片 -->
+<div class="cover-screen" id="coverPage">
+  <div class="game-card" onclick="startGame()">
+    <div class="card-cover">
+      <div class="grid-preview">
+        <div class="cell x">X</div>
+        <div class="cell o">O</div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell x">X</div>
+        <div class="cell"></div>
+        <div class="cell o">O</div>
+        <div class="cell"></div>
+        <div class="cell x">X</div>
+      </div>
+    </div>
+    <div class="card-title">⭕ 井字棋</div>
+  </div>
+  <div class="start-hint">点击卡片开始游戏</div>
+</div>
+
+<!-- 游戏界面 -->
+<div class="game-wrapper" id="gameWrapper">
+  <div class="game-container">
+    <h2>⭕ 井字棋</h2>
+    <canvas id="tictactoeCanvas" width="400" height="400"></canvas>
+    <div class="game-info" id="tictactoeStatus">点击格子下棋，你先手 (X)</div>
+    <div class="controls">点击格子下棋，人机对战</div>
+    <button class="btn" onclick="resetTicTacToe()">重新开始</button>
+  </div>
+</div>
+
+<script>
+function startGame() {
+  document.getElementById('coverPage').classList.add('hidden');
+  setTimeout(() => {
+    document.getElementById('coverPage').style.display = 'none';
+    document.getElementById('gameWrapper').classList.add('active');
+    resetTicTacToe();
+  }, 500);
+}
+
+const canvas = document.getElementById('tictactoeCanvas');
+const ctx = canvas.getContext('2d');
+let board = Array(9).fill('');
+let currentPlayer = 'X';
+let gameOver = false;
+
+function draw() {
+  ctx.fillStyle = '#0f3460';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const cellSize = canvas.width / 3;
+
+  ctx.strokeStyle = '#4ecca3';
+  ctx.lineWidth = 4;
+  for (let i = 1; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * cellSize, 10);
+    ctx.lineTo(i * cellSize, canvas.height - 10);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(10, i * cellSize);
+    ctx.lineTo(canvas.width - 10, i * cellSize);
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < 9; i++) {
+    const x = (i % 3) * cellSize + cellSize / 2;
+    const y = Math.floor(i / 3) * cellSize + cellSize / 2;
+
+    if (board[i] === 'X') {
+      ctx.strokeStyle = '#e94560';
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(x - 35, y - 35);
+      ctx.lineTo(x + 35, y + 35);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + 35, y - 35);
+      ctx.lineTo(x - 35, y + 35);
+      ctx.stroke();
+    } else if (board[i] === 'O') {
+      ctx.strokeStyle = '#4ecca3';
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.arc(x, y, 40, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  const winLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for (let line of winLines) {
+    if (board[line[0]] && board[line[0]] === board[line[1]] && board[line[0]] === board[line[2]]) {
+      const startX = (line[0] % 3) * cellSize + cellSize / 2;
+      const startY = Math.floor(line[0] / 3) * cellSize + cellSize / 2;
+      const endX = (line[2] % 3) * cellSize + cellSize / 2;
+      const endY = Math.floor(line[2] / 3) * cellSize + cellSize / 2;
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 9;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+    }
+  }
+}
+
+function checkWin() {
+  const winLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for (let line of winLines) {
+    if (board[line[0]] && board[line[0]] === board[line[1]] && board[line[0]] === board[line[2]]) {
+      return board[line[0]];
+    }
+  }
+  if (board.every(c => c !== '')) return 'draw';
+  return null;
+}
+
+function aiMove() {
+  if (gameOver) return;
+  const winLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+  for (let line of winLines) {
+    const vals = [board[line[0]], board[line[1]], board[line[2]]];
+    const emptyIdx = vals.indexOf('');
+    if (emptyIdx !== -1 && vals.filter(v => v === 'O').length === 2) {
+      board[line[emptyIdx]] = 'O';
+      return;
+    }
+  }
+
+  for (let line of winLines) {
+    const vals = [board[line[0]], board[line[1]], board[line[2]]];
+    const emptyIdx = vals.indexOf('');
+    if (emptyIdx !== -1 && vals.filter(v => v === 'X').length === 2) {
+      board[line[emptyIdx]] = 'O';
+      return;
+    }
+  }
+
+  if (board[4] === '') { board[4] = 'O'; return; }
+
+  const empty = board.map((v,i) => v === '' ? i : -1).filter(i => i !== -1);
+  if (empty.length) board[empty[Math.floor(Math.random() * empty.length)]] = 'O';
+}
+
+function updateStatus() {
+  const winner = checkWin();
+  const status = document.getElementById('tictactoeStatus');
+  if (winner === 'X') status.textContent = '你赢了! 🎉';
+  else if (winner === 'O') status.textContent = '电脑赢了!';
+  else if (winner === 'draw') status.textContent = '平局!';
+  else status.textContent = currentPlayer === 'X' ? '轮到你了 (X)' : '电脑思考中...';
+}
+
+canvas.addEventListener('click', e => {
+  if (gameOver || currentPlayer !== 'X') return;
+  const rect = canvas.getBoundingClientRect();
+  const cellSize = canvas.width / 3;
+  const col = Math.floor((e.clientX - rect.left) / cellSize);
+  const row = Math.floor((e.clientY - rect.top) / cellSize);
+  const idx = row * 3 + col;
+
+  if (board[idx] === '') {
+    board[idx] = 'X';
+    currentPlayer = 'O';
+    draw();
+
+    const winner = checkWin();
+    if (winner) {
+      gameOver = true;
+      draw();
+      updateStatus();
+      return;
+    }
+
+    updateStatus();
+
+    setTimeout(() => {
+      aiMove();
+      currentPlayer = 'X';
+      draw();
+      const winner2 = checkWin();
+      if (winner2) { gameOver = true; }
+      updateStatus();
+    }, 500);
+  }
+});
+
+function resetTicTacToe() {
+  board = Array(9).fill('');
+  currentPlayer = 'X';
+  gameOver = false;
+  document.getElementById('tictactoeStatus').textContent = '点击格子下棋，你先手 (X)';
+  draw();
+}
+</script>
+</body>
+</html>

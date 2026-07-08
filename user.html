@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>个人中心 - GamePlatform</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="particle-bg" aria-hidden="true"></div>
+
+  <main class="container neon-card">
+    <h2>个人中心</h2>
+    <div id="profile"></div>
+    <h3>我的游戏数据</h3>
+    <div id="user-games"></div>
+    <div class="form-actions">
+      <button id="logout" class="btn danger">退出登录</button>
+      <a href="index.html" class="btn">返回大厅</a>
+    </div>
+  </main>
+
+  <script src="js/particles.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/games-api.js"></script>
+  <script>
+    (function(){
+      const user = Auth.getCurrentUser();
+      if(!user) { location.href='login.html'; return; }
+      document.getElementById('profile').innerHTML = `
+        <p>昵称：${user.nickname}</p>
+        <p>邮箱：${user.email || '（游客）'}</p>
+        <p>签到：${user.lastCheckIn || '未签到'}</p>
+      `;
+      const container = document.getElementById('user-games');
+      const data = Auth.getUserRecord();
+      container.innerHTML = '<ul>' + Object.entries(data.games||{}).map(([g,v])=>{
+        return `<li>${g} — 最高分：${v.best||0} · 游玩次数：${v.plays||0}</li>`;
+      }).join('') + '</ul>';
+      document.getElementById('logout').addEventListener('click', ()=>{
+        Auth.logout();
+        location.href='login.html';
+      });
+    })();
+  </script>
+</body>
+</html>
